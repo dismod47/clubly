@@ -5,6 +5,7 @@ import './index.css'
 import { Layout } from './components/Layout'
 import { LandingPage } from './pages/LandingPage'
 import { SchoolEventsPage } from './pages/SchoolEventsPage'
+import { MonthlyCalendarPage } from './pages/MonthlyCalendarPage'
 import { AdminLoginPage } from './pages/admin/AdminLoginPage'
 import { AdminDashboardPage } from './pages/admin/AdminDashboardPage'
 
@@ -18,6 +19,8 @@ createRoot(document.getElementById('root')!).render(
         {/* Admin routes */}
         <Route path="/admin" element={<AdminLoginPage />} />
         <Route path="/admin/dashboard" element={<AdminDashboardPage />} />
+        {/* Monthly calendar route - before dynamic slug */}
+        <Route path="/:slug/calendar" element={<MonthlyCalendarPage />} />
         {/* Dynamic school route - must be last */}
         <Route path="/:slug" element={<SchoolEventsPage />} />
       </Routes>

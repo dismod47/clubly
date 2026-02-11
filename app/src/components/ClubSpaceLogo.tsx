@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 
-export function ClublyLogo() {
+export function ClubSpaceLogo() {
   return (
     <Link to="/" className="flex items-center gap-2.5 hover:opacity-90 transition-opacity">
       {/* Friendly orange logo with warm rounded design */}
@@ -22,7 +22,7 @@ export function ClublyLogo() {
           <circle cx="18" cy="8" r="2.5" fill="white" />
         </svg>
       </div>
-      <span className="text-xl font-bold text-[#111] tracking-tight">clubly</span>
+      <span className="text-xl font-bold text-[#111] tracking-tight">ClubSpace</span>
     </Link>
   );
 }

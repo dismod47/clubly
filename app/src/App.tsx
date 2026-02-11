@@ -137,12 +137,12 @@ function App() {
       <header className="sticky top-0 z-40 bg-[#F6F6F2]/95 backdrop-blur-sm border-b border-gray-200/50">
         <div className="px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-2.5">
-            {/* Orange Clubly logo */}
+            {/* Orange ClubSpace logo */}
             <div className="w-9 h-9 rounded-xl bg-[#FF6B35] flex items-center justify-center">
               <span className="text-white font-bold text-sm">C</span>
             </div>
             <div>
-              <h1 className="font-bold text-[18px] text-[#111] leading-tight">Clubly</h1>
+              <h1 className="font-bold text-[18px] text-[#111] leading-tight">ClubSpace</h1>
             </div>
           </div>
           <div className="flex items-center gap-2">

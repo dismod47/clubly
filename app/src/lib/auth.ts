@@ -1,6 +1,6 @@
 import { supabase } from './supabase';
 
-const SESSION_KEY = 'clubly_session';
+const SESSION_KEY = 'clubspace_session';
 
 interface DbUser {
   id: string;

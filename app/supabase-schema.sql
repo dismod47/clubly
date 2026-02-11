@@ -50,6 +50,8 @@ CREATE TABLE IF NOT EXISTS public.events (
   custom_category TEXT,
   org_id UUID REFERENCES public.users(id) ON DELETE SET NULL,
   logo_url TEXT,
+  thumbnail_url TEXT,
+  video_url TEXT,
   is_approved BOOLEAN DEFAULT true,
   created_at TIMESTAMPTZ DEFAULT now()
 );
@@ -166,6 +168,8 @@ CREATE POLICY "Anyone can read logos" ON storage.objects
 -- ALTER TABLE public.users ADD COLUMN IF NOT EXISTS logo_url TEXT;
 -- ALTER TABLE public.events ADD COLUMN IF NOT EXISTS custom_category TEXT;
 -- ALTER TABLE public.events ADD COLUMN IF NOT EXISTS logo_url TEXT;
+-- ALTER TABLE public.events ADD COLUMN IF NOT EXISTS thumbnail_url TEXT;
+-- ALTER TABLE public.events ADD COLUMN IF NOT EXISTS video_url TEXT;
 -- ALTER TABLE public.events DROP COLUMN IF EXISTS org_short_name;
 -- ALTER TABLE public.events ALTER COLUMN org_id DROP NOT NULL;
 -- ALTER TABLE public.events ALTER COLUMN title SET DEFAULT 'Untitled Event';

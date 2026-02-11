@@ -93,7 +93,7 @@ export function OrgLoginModal({ isOpen, onClose, onLogin, onSuccess }: OrgLoginM
         </form>
 
         <p className="text-xs text-center text-[#6F6F6F] mt-4">
-          Don't have credentials? Contact your school's Clubly admin.
+          Don't have credentials? Contact your school's ClubSpace admin.
         </p>
       </div>
     </div>

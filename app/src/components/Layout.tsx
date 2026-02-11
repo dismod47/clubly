@@ -1,5 +1,5 @@
 import { Outlet } from 'react-router-dom';
-import { ClublyLogo } from './ClublyLogo';
+import { ClubSpaceLogo } from './ClubSpaceLogo';
 
 export function Layout() {
   return (
@@ -10,7 +10,7 @@ export function Layout() {
       {/* Header */}
       <header className="sticky top-0 z-40 bg-[#F6F6F2]/95 backdrop-blur-sm border-b border-gray-200/50">
         <div className="max-w-4xl mx-auto px-4 py-3 flex items-center justify-between">
-          <ClublyLogo />
+          <ClubSpaceLogo />
         </div>
       </header>
       
@@ -22,7 +22,7 @@ export function Layout() {
       {/* Footer */}
       <footer className="mt-auto py-8 border-t border-gray-200/50">
         <div className="max-w-4xl mx-auto px-4 text-center text-sm text-[#6F6F6F]">
-          <p>© {new Date().getFullYear()} Clubly. All rights reserved.</p>
+          <p>© {new Date().getFullYear()} ClubSpace. All rights reserved.</p>
         </div>
       </footer>
     </div>

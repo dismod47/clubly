@@ -27,7 +27,7 @@ import {
   type ActivityLog,
 } from '@/lib/admin-api';
 
-const ADMIN_SESSION_KEY = 'clubly_admin_session';
+const ADMIN_SESSION_KEY = 'clubspace_admin_session';
 
 interface AdminSession {
   id: string;
@@ -381,7 +381,7 @@ export function AdminDashboardPage() {
               <span className="text-white font-bold text-sm">C</span>
             </div>
             <div>
-              <h1 className="font-bold text-lg text-[#111]">Clubly Admin</h1>
+              <h1 className="font-bold text-lg text-[#111]">ClubSpace Admin</h1>
               <p className="text-xs text-gray-500">Logged in as {admin.organizationName}</p>
             </div>
           </div>
@@ -697,7 +697,7 @@ export function AdminDashboardPage() {
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Slug (auto-generated)</label>
                 <div className="flex items-center gap-2">
-                  <span className="text-gray-500">clubly.me/</span>
+                  <span className="text-gray-500">clubspace.me/</span>
                   <input
                     type="text"
                     value={schoolForm.slug}

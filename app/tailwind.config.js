@@ -10,6 +10,36 @@ module.exports = {
         ring: "hsl(var(--ring))",
         background: "hsl(var(--background))",
         foreground: "hsl(var(--foreground))",
+        // Expanded brand palette
+        uh: {
+          orange: {
+            DEFAULT: "#FF6B35",
+            light: "#FF8F66",
+            dark: "#E55A2B",
+          },
+          teal: {
+            DEFAULT: "#14B8A6",
+            light: "#5EEAD4",
+            dark: "#0D9488",
+          },
+          purple: {
+            DEFAULT: "#8B5CF6",
+            light: "#A78BFA",
+            dark: "#7C3AED",
+          },
+          pink: {
+            DEFAULT: "#EC4899",
+            light: "#F472B6",
+          },
+          blue: {
+            DEFAULT: "#3B82F6",
+            light: "#60A5FA",
+          },
+          green: {
+            DEFAULT: "#22C55E",
+            light: "#4ADE80",
+          },
+        },
         primary: {
           DEFAULT: "hsl(var(--primary))",
           foreground: "hsl(var(--primary-foreground))",

@@ -1,8 +1,8 @@
-import { useState, useMemo } from 'react';
-import { X } from 'lucide-react';
+import { useState, useMemo, useRef } from 'react';
+import { X, Copy, Plus, Trash2, Video, Upload, XCircle } from 'lucide-react';
 import type { EventCategory } from '@/types';
 import { categoryEmojis } from '@/types';
-import { createEvent } from '@/lib/events-api';
+import { createEvent, uploadVideo } from '@/lib/events-api';
 import { logActivity } from '@/lib/admin-api';
 import { EventCard } from './EventCard';
 import type { AuthUser } from '@/lib/auth';
@@ -27,8 +27,78 @@ export function CreateEventModal({ isOpen, onClose, user, onEventCreated }: Crea
   const [category, setCategory] = useState<EventCategory>('Social');
   const [customCategory, setCustomCategory] = useState('');
 
+  // Multi-day duplication state
+  const [duplicateEnabled, setDuplicateEnabled] = useState(false);
+  const [additionalDates, setAdditionalDates] = useState<string[]>([]);
+
+  // Video upload state
+  const [videoFile, setVideoFile] = useState<File | null>(null);
+  const [videoUrl, setVideoUrl] = useState<string | null>(null);
+  const [videoUploading, setVideoUploading] = useState(false);
+  const [videoPreviewUrl, setVideoPreviewUrl] = useState<string | null>(null);
+  const videoInputRef = useRef<HTMLInputElement>(null);
+
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+
+  const addAdditionalDate = () => {
+    setAdditionalDates([...additionalDates, '']);
+  };
+
+  const removeAdditionalDate = (index: number) => {
+    setAdditionalDates(additionalDates.filter((_, i) => i !== index));
+  };
+
+  const updateAdditionalDate = (index: number, value: string) => {
+    const updated = [...additionalDates];
+    updated[index] = value;
+    setAdditionalDates(updated);
+  };
+
+  const handleVideoSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate file size (50MB max)
+    if (file.size > 50 * 1024 * 1024) {
+      setError('Video must be less than 50MB');
+      return;
+    }
+
+    // Validate file type
+    if (!['video/mp4', 'video/quicktime', 'video/webm'].includes(file.type)) {
+      setError('Only MP4, MOV, and WebM videos are allowed');
+      return;
+    }
+
+    setVideoFile(file);
+    setVideoPreviewUrl(URL.createObjectURL(file));
+    setError('');
+
+    // Upload video
+    setVideoUploading(true);
+    const result = await uploadVideo(file);
+    setVideoUploading(false);
+
+    if (result.error) {
+      setError(result.error);
+      return;
+    }
+
+    setVideoUrl(result.url);
+  };
+
+  const removeVideo = () => {
+    setVideoFile(null);
+    setVideoUrl(null);
+    if (videoPreviewUrl) {
+      URL.revokeObjectURL(videoPreviewUrl);
+    }
+    setVideoPreviewUrl(null);
+    if (videoInputRef.current) {
+      videoInputRef.current.value = '';
+    }
+  };
 
   const previewEvent = useMemo(() => {
     const now = new Date();
@@ -54,8 +124,9 @@ export function CreateEventModal({ isOpen, onClose, user, onEventCreated }: Crea
       organization: user?.organizationName || 'Your Organization',
       orgShortName: (user?.organizationName || 'ORG').split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 5),
       date: date || now.toISOString().split('T')[0],
+      videoUrl: videoUrl || undefined,
     };
-  }, [title, description, date, startTime, endTime, location, category, customCategory, user]);
+  }, [title, description, date, startTime, endTime, location, category, customCategory, user, videoUrl]);
 
   if (!isOpen) return null;
 
@@ -84,44 +155,74 @@ export function CreateEventModal({ isOpen, onClose, user, onEventCreated }: Crea
     setError('');
     setLoading(true);
 
-    const startDateTime = date && startTime ? new Date(`${date}T${startTime}`) : undefined;
-    const endDateTime = date && endTime ? new Date(`${date}T${endTime}`) : undefined;
+    // Collect all dates to create events for
+    const allDates = [date];
+    if (duplicateEnabled) {
+      const validAdditionalDates = additionalDates.filter(d => d && d !== date);
+      allDates.push(...validAdditionalDates);
+    }
 
-    const result = await createEvent({
-      title: title || undefined,
-      description: description || undefined,
-      startTime: startDateTime,
-      endTime: endDateTime,
-      location: location || undefined,
-      category,
-      customCategory: category === 'Other' ? customCategory : undefined,
-      orgId: user.id,
-      orgName: user.organizationName,
-    });
+    // Filter out empty dates
+    const datesToCreate = allDates.filter(d => d);
 
-    if (result.error) {
-      setError(result.error);
+    if (datesToCreate.length === 0) {
+      setError('Please select at least one date');
       setLoading(false);
       return;
     }
 
-    // Log the event creation
-    if (result.event) {
-      await logActivity(
-        'event_created',
-        user.id,
-        user.organizationName,
-        'event',
-        result.event.id,
-        result.event.title,
-        { date: result.event.date, location: result.event.location }
-      );
+    let createdCount = 0;
+    let lastError = '';
+
+    // Create event for each date
+    for (const eventDate of datesToCreate) {
+      // Use provided time, or default to noon to avoid timezone issues
+      const startDateTime = eventDate ? new Date(`${eventDate}T${startTime || '12:00'}`) : undefined;
+      const endDateTime = eventDate ? new Date(`${eventDate}T${endTime || '13:00'}`) : undefined;
+
+      const result = await createEvent({
+        title: title || undefined,
+        description: description || undefined,
+        startTime: startDateTime,
+        endTime: endDateTime,
+        location: location || undefined,
+        category,
+        customCategory: category === 'Other' ? customCategory : undefined,
+        orgId: user.id,
+        orgName: user.organizationName,
+        videoUrl: videoUrl,
+      });
+
+      if (result.error) {
+        lastError = result.error;
+        continue;
+      }
+
+      // Log the event creation
+      if (result.event) {
+        await logActivity(
+          'event_created',
+          user.id,
+          user.organizationName,
+          'event',
+          result.event.id,
+          result.event.title,
+          { date: result.event.date, location: result.event.location }
+        );
+        createdCount++;
+      }
+    }
+
+    if (createdCount === 0) {
+      setError(lastError || 'Failed to create events');
+      setLoading(false);
+      return;
     }
 
     setLoading(false);
     onEventCreated();
     onClose();
-    
+
     // Reset form
     setTitle('');
     setDescription('');
@@ -131,6 +232,9 @@ export function CreateEventModal({ isOpen, onClose, user, onEventCreated }: Crea
     setLocation('');
     setCategory('Social');
     setCustomCategory('');
+    setDuplicateEnabled(false);
+    setAdditionalDates([]);
+    removeVideo();
   };
 
   return (
@@ -208,6 +312,64 @@ export function CreateEventModal({ isOpen, onClose, user, onEventCreated }: Crea
             </div>
           </div>
 
+          {/* Multi-day duplication toggle */}
+          <div className="border border-gray-200 rounded-lg p-3">
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={duplicateEnabled}
+                onChange={e => {
+                  setDuplicateEnabled(e.target.checked);
+                  if (!e.target.checked) setAdditionalDates([]);
+                }}
+                className="w-4 h-4 rounded border-gray-300 text-[#FF6B35] focus:ring-[#FF6B35]"
+              />
+              <Copy size={14} className="text-[#6F6F6F]" />
+              <span className="text-sm font-medium text-[#111]">Duplicate to multiple days</span>
+            </label>
+
+            {duplicateEnabled && (
+              <div className="mt-3 space-y-2">
+                <p className="text-xs text-[#6F6F6F]">
+                  Add additional dates to create this event on multiple days
+                </p>
+
+                {additionalDates.map((additionalDate, index) => (
+                  <div key={index} className="flex items-center gap-2">
+                    <input
+                      type="date"
+                      value={additionalDate}
+                      onChange={e => updateAdditionalDate(index, e.target.value)}
+                      className="flex-1 px-2 py-1.5 rounded-lg border border-gray-200 focus:border-[#FF6B35] focus:ring-1 focus:ring-[#FF6B35]/20 outline-none text-sm"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => removeAdditionalDate(index)}
+                      className="p-1.5 rounded-lg text-red-500 hover:bg-red-50 transition-colors"
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  </div>
+                ))}
+
+                <button
+                  type="button"
+                  onClick={addAdditionalDate}
+                  className="flex items-center gap-1 text-xs font-medium text-[#FF6B35] hover:text-[#e55a2b] transition-colors"
+                >
+                  <Plus size={14} />
+                  Add another date
+                </button>
+
+                {additionalDates.length > 0 && (
+                  <p className="text-xs text-[#6F6F6F] bg-gray-50 px-2 py-1.5 rounded">
+                    This will create {additionalDates.filter(d => d).length + 1} events total
+                  </p>
+                )}
+              </div>
+            )}
+          </div>
+
           <div>
             <label className="block text-xs font-medium text-[#6F6F6F] mb-1">Location</label>
             <input
@@ -248,6 +410,68 @@ export function CreateEventModal({ isOpen, onClose, user, onEventCreated }: Crea
             )}
           </div>
 
+          {/* Video Upload */}
+          <div>
+            <label className="block text-xs font-medium text-[#6F6F6F] mb-1">
+              Video (optional)
+            </label>
+            <input
+              ref={videoInputRef}
+              type="file"
+              accept="video/mp4,video/quicktime,video/webm"
+              onChange={handleVideoSelect}
+              className="hidden"
+            />
+
+            {!videoFile ? (
+              <button
+                type="button"
+                onClick={() => videoInputRef.current?.click()}
+                className="w-full border-2 border-dashed border-gray-200 rounded-xl p-4 flex flex-col items-center gap-2 hover:border-[#FF6B35] hover:bg-orange-50/30 transition-colors group"
+              >
+                <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center group-hover:bg-orange-100 transition-colors">
+                  <Video size={20} className="text-gray-400 group-hover:text-[#FF6B35] transition-colors" />
+                </div>
+                <span className="text-sm text-gray-500 group-hover:text-[#FF6B35] transition-colors">
+                  Add a video to showcase your event
+                </span>
+                <span className="text-xs text-gray-400">MP4, MOV, WebM • Max 50MB • 60s recommended</span>
+              </button>
+            ) : (
+              <div className="relative rounded-xl overflow-hidden bg-black">
+                {videoPreviewUrl && (
+                  <video
+                    src={videoPreviewUrl}
+                    className="w-full max-h-48 object-contain"
+                    controls
+                    muted
+                  />
+                )}
+                <button
+                  type="button"
+                  onClick={removeVideo}
+                  className="absolute top-2 right-2 w-8 h-8 rounded-full bg-black/50 flex items-center justify-center hover:bg-black/70 transition-colors"
+                >
+                  <XCircle size={18} className="text-white" />
+                </button>
+                {videoUploading && (
+                  <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+                    <div className="flex items-center gap-2 text-white">
+                      <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full spinner" />
+                      <span className="text-sm">Uploading...</span>
+                    </div>
+                  </div>
+                )}
+                {videoUrl && !videoUploading && (
+                  <div className="absolute bottom-2 left-2 px-2 py-1 rounded-full bg-green-500 text-white text-xs flex items-center gap-1">
+                    <Upload size={12} />
+                    Uploaded
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+
           <div className="pt-4 border-t border-gray-100">
             <p className="text-xs font-medium text-[#6F6F6F] mb-3">Preview</p>
             <EventCard event={previewEvent} onClick={() => {}} variant="minimal" />
@@ -262,7 +486,12 @@ export function CreateEventModal({ isOpen, onClose, user, onEventCreated }: Crea
             disabled={loading}
             className="w-full py-3 rounded-xl bg-[#FF6B35] text-white font-semibold hover:bg-[#e55a2b] disabled:opacity-50 transition-colors"
           >
-            {loading ? 'Creating...' : 'Post Event'}
+            {loading
+              ? 'Creating...'
+              : duplicateEnabled && additionalDates.filter(d => d).length > 0
+                ? `Post ${additionalDates.filter(d => d).length + 1} Events`
+                : 'Post Event'
+            }
           </button>
         </form>
       </div>

@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { supabase } from '@/lib/supabase';
 
-const ADMIN_SESSION_KEY = 'clubly_admin_session';
+const ADMIN_SESSION_KEY = 'clubspace_admin_session';
 
 interface AdminUser {
   id: string;
@@ -103,7 +103,7 @@ export function AdminLoginPage() {
             </svg>
           </div>
           <h1 className="text-2xl font-bold text-[#111]">Admin Login</h1>
-          <p className="text-[#6F6F6F] mt-1">Sign in to the Clubly admin panel</p>
+          <p className="text-[#6F6F6F] mt-1">Sign in to the ClubSpace admin panel</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -157,7 +157,7 @@ export function AdminLoginPage() {
             to="/"
             className="text-sm text-[#6F6F6F] hover:text-[#FF6B35] transition-colors"
           >
-            ← Back to Clubly
+            ← Back to ClubSpace
           </Link>
         </div>
       </div>

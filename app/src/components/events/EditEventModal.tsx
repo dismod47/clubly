@@ -1,8 +1,8 @@
-import { useState, useEffect } from 'react';
-import { X } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { X, Video, XCircle, Upload } from 'lucide-react';
 import type { EventCategory, OrgEvent } from '@/types';
 import { categoryEmojis } from '@/types';
-import { updateEvent } from '@/lib/events-api';
+import { updateEvent, uploadVideo } from '@/lib/events-api';
 import type { AuthUser } from '@/lib/auth';
 
 interface EditEventModalProps {
@@ -26,6 +26,13 @@ export function EditEventModal({ isOpen, onClose, user, event, isAdmin = false, 
   const [category, setCategory] = useState<EventCategory>('Social');
   const [customCategory, setCustomCategory] = useState('');
 
+  // Video state
+  const [videoFile, setVideoFile] = useState<File | null>(null);
+  const [videoUrl, setVideoUrl] = useState<string | null>(null);
+  const [videoUploading, setVideoUploading] = useState(false);
+  const [videoPreviewUrl, setVideoPreviewUrl] = useState<string | null>(null);
+  const videoInputRef = useRef<HTMLInputElement>(null);
+
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -37,7 +44,12 @@ export function EditEventModal({ isOpen, onClose, user, event, isAdmin = false, 
       setLocation(event.location);
       setCategory(event.category);
       setCustomCategory(event.customCategory || '');
-      
+
+      // Set video URL if exists
+      setVideoUrl(event.videoUrl || null);
+      setVideoPreviewUrl(event.videoUrl || null);
+      setVideoFile(null);
+
       // Parse time from event.startTime/endTime (format: "3:00 PM")
       // We need to convert to 24h format for the input
       const parseTime = (timeStr: string) => {
@@ -52,11 +64,53 @@ export function EditEventModal({ isOpen, onClose, user, event, isAdmin = false, 
         }
         return '';
       };
-      
+
       setStartTime(parseTime(event.startTime));
       setEndTime(parseTime(event.endTime));
     }
   }, [event, isOpen]);
+
+  const handleVideoSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 50 * 1024 * 1024) {
+      setError('Video must be less than 50MB');
+      return;
+    }
+
+    if (!['video/mp4', 'video/quicktime', 'video/webm'].includes(file.type)) {
+      setError('Only MP4, MOV, and WebM videos are allowed');
+      return;
+    }
+
+    setVideoFile(file);
+    setVideoPreviewUrl(URL.createObjectURL(file));
+    setError('');
+
+    setVideoUploading(true);
+    const result = await uploadVideo(file);
+    setVideoUploading(false);
+
+    if (result.error) {
+      setError(result.error);
+      return;
+    }
+
+    setVideoUrl(result.url);
+  };
+
+  const removeVideo = () => {
+    setVideoFile(null);
+    setVideoUrl(null);
+    if (videoPreviewUrl && !event?.videoUrl) {
+      URL.revokeObjectURL(videoPreviewUrl);
+    }
+    setVideoPreviewUrl(null);
+    if (videoInputRef.current) {
+      videoInputRef.current.value = '';
+    }
+  };
 
   if (!isOpen || !event) return null;
 
@@ -85,8 +139,9 @@ export function EditEventModal({ isOpen, onClose, user, event, isAdmin = false, 
     setError('');
     setLoading(true);
 
-    const startDateTime = date && startTime ? new Date(`${date}T${startTime}`) : undefined;
-    const endDateTime = date && endTime ? new Date(`${date}T${endTime}`) : undefined;
+    // Use provided time, or default to noon to avoid timezone issues
+    const startDateTime = date ? new Date(`${date}T${startTime || '12:00'}`) : undefined;
+    const endDateTime = date ? new Date(`${date}T${endTime || '13:00'}`) : undefined;
 
     const result = await updateEvent(
       event.id,
@@ -100,6 +155,7 @@ export function EditEventModal({ isOpen, onClose, user, event, isAdmin = false, 
         location: location || undefined,
         category,
         customCategory: category === 'Other' ? customCategory : undefined,
+        videoUrl: videoUrl,
       }
     );
 
@@ -226,6 +282,66 @@ export function EditEventModal({ isOpen, onClose, user, event, isAdmin = false, 
                 placeholder="Enter custom category"
                 className="w-full mt-2 px-3 py-2 rounded-lg border border-gray-200 focus:border-[#FF6B35] focus:ring-1 focus:ring-[#FF6B35]/20 outline-none text-sm"
               />
+            )}
+          </div>
+
+          {/* Video Upload */}
+          <div>
+            <label className="block text-xs font-medium text-[#6F6F6F] mb-1">
+              Video (optional)
+            </label>
+            <input
+              ref={videoInputRef}
+              type="file"
+              accept="video/mp4,video/quicktime,video/webm"
+              onChange={handleVideoSelect}
+              className="hidden"
+            />
+
+            {!videoPreviewUrl ? (
+              <button
+                type="button"
+                onClick={() => videoInputRef.current?.click()}
+                className="w-full border-2 border-dashed border-gray-200 rounded-xl p-4 flex flex-col items-center gap-2 hover:border-[#FF6B35] hover:bg-orange-50/30 transition-colors group"
+              >
+                <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center group-hover:bg-orange-100 transition-colors">
+                  <Video size={20} className="text-gray-400 group-hover:text-[#FF6B35] transition-colors" />
+                </div>
+                <span className="text-sm text-gray-500 group-hover:text-[#FF6B35] transition-colors">
+                  Add a video to showcase your event
+                </span>
+                <span className="text-xs text-gray-400">MP4, MOV, WebM • Max 50MB • 60s recommended</span>
+              </button>
+            ) : (
+              <div className="relative rounded-xl overflow-hidden bg-black">
+                <video
+                  src={videoPreviewUrl}
+                  className="w-full max-h-48 object-contain"
+                  controls
+                  muted
+                />
+                <button
+                  type="button"
+                  onClick={removeVideo}
+                  className="absolute top-2 right-2 w-8 h-8 rounded-full bg-black/50 flex items-center justify-center hover:bg-black/70 transition-colors"
+                >
+                  <XCircle size={18} className="text-white" />
+                </button>
+                {videoUploading && (
+                  <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+                    <div className="flex items-center gap-2 text-white">
+                      <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full spinner" />
+                      <span className="text-sm">Uploading...</span>
+                    </div>
+                  </div>
+                )}
+                {videoUrl && !videoUploading && (
+                  <div className="absolute bottom-2 left-2 px-2 py-1 rounded-full bg-green-500 text-white text-xs flex items-center gap-1">
+                    <Upload size={12} />
+                    {videoFile ? 'Uploaded' : 'Video attached'}
+                  </div>
+                )}
+              </div>
             )}
           </div>
 

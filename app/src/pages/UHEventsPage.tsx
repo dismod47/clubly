@@ -5,7 +5,7 @@ import { WeekCalendar } from '@/components/WeekCalendar';
 import { AuthModal } from '@/components/auth/AuthModal';
 import { CreateEventModal } from '@/components/events/CreateEventModal';
 import { EditEventModal } from '@/components/events/EditEventModal';
-import { ClublyLogo } from '@/components/ClublyLogo';
+import { ClubSpaceLogo } from '@/components/ClubSpaceLogo';
 import { useAuth } from '@/hooks/useAuth';
 import { fetchEvents } from '@/lib/events-api';
 import type { OrgEvent } from '@/types';
@@ -113,7 +113,7 @@ export function UHEventsPage() {
       
       <header className="sticky top-0 z-40 bg-[#F6F6F2]/95 backdrop-blur-sm border-b border-gray-200/50">
         <div className="px-4 py-3 flex items-center justify-between max-w-4xl mx-auto">
-          <ClublyLogo />
+          <ClubSpaceLogo />
           <div className="flex items-center gap-2">
             {user && (
               <button 
@@ -137,7 +137,7 @@ export function UHEventsPage() {
       
       <div className="bg-gradient-to-r from-[#FF8C42] to-[#FF6B35] text-white py-6 px-4">
         <div className="max-w-4xl mx-auto">
-          <h1 className="text-2xl font-bold mb-1">Clubly at the University of Houston</h1>
+          <h1 className="text-2xl font-bold mb-1">ClubSpace at the University of Houston</h1>
           <p className="text-white/90 text-sm">
             A platform for University of Houston student organizations to share events
           </p>
@@ -244,10 +244,10 @@ export function UHEventsPage() {
       <footer className="mt-12 py-6 border-t border-gray-200/50">
         <div className="max-w-4xl mx-auto px-4 text-center">
           <p className="text-xs text-[#6F6F6F]">
-            Clubly is an independent platform and is not affiliated with or endorsed by the University of Houston.
+            ClubSpace is an independent platform and is not affiliated with or endorsed by the University of Houston.
           </p>
           <p className="text-xs text-[#6F6F6F] mt-2">
-            © {new Date().getFullYear()} Clubly. All rights reserved.
+            © {new Date().getFullYear()} ClubSpace. All rights reserved.
           </p>
         </div>
       </footer>

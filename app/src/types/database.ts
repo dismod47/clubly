@@ -40,6 +40,15 @@ export interface Database {
           logo_url?: string | null;
           created_at?: string;
         };
+        Relationships: [
+          {
+            foreignKeyName: "users_school_id_fkey";
+            columns: ["school_id"];
+            isOneToOne: false;
+            referencedRelation: "schools";
+            referencedColumns: ["id"];
+          }
+        ];
       };
       events: {
         Row: {
@@ -53,6 +62,8 @@ export interface Database {
           custom_category: string | null;
           org_id: string | null;
           logo_url: string | null;
+          video_url: string | null;
+          thumbnail_url: string | null;
           is_approved: boolean;
           created_at: string;
         };
@@ -67,6 +78,8 @@ export interface Database {
           custom_category?: string | null;
           org_id?: string | null;
           logo_url?: string | null;
+          video_url?: string | null;
+          thumbnail_url?: string | null;
           is_approved?: boolean;
           created_at?: string;
         };
@@ -81,9 +94,20 @@ export interface Database {
           custom_category?: string | null;
           org_id?: string | null;
           logo_url?: string | null;
+          video_url?: string | null;
+          thumbnail_url?: string | null;
           is_approved?: boolean;
           created_at?: string;
         };
+        Relationships: [
+          {
+            foreignKeyName: "events_org_id_fkey";
+            columns: ["org_id"];
+            isOneToOne: false;
+            referencedRelation: "users";
+            referencedColumns: ["id"];
+          }
+        ];
       };
       schools: {
         Row: {
@@ -110,6 +134,7 @@ export interface Database {
           color?: string | null;
           created_at?: string;
         };
+        Relationships: [];
       };
       activity_logs: {
         Row: {
@@ -145,7 +170,28 @@ export interface Database {
           details?: Record<string, unknown> | null;
           created_at?: string;
         };
+        Relationships: [
+          {
+            foreignKeyName: "activity_logs_actor_id_fkey";
+            columns: ["actor_id"];
+            isOneToOne: false;
+            referencedRelation: "users";
+            referencedColumns: ["id"];
+          }
+        ];
       };
+    };
+    Views: {
+      [_ in never]: never;
+    };
+    Functions: {
+      [_ in never]: never;
+    };
+    Enums: {
+      [_ in never]: never;
+    };
+    CompositeTypes: {
+      [_ in never]: never;
     };
   };
 }

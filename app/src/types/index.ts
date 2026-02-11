@@ -14,6 +14,8 @@ export interface OrgEvent {
   date: string; // ISO date string
   logoUrl?: string;
   orgId?: string;
+  videoUrl?: string;
+  thumbnailUrl?: string;
 }
 
 export interface DayGroup {
